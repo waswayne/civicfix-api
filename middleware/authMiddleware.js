@@ -3,6 +3,8 @@ import jwt from 'jsonwebtoken'
 import { JWT_SECRET } from '../config/env.js'
 
 
+
+
 export const requireAuth = (req, res, next) => {
   try {
     // console.log('HEADERS:', req.headers);
@@ -29,3 +31,4 @@ export const requireAuth = (req, res, next) => {
     return res.status(401).json({ error: 'Invalid or expired token' })
   }
 };
+
