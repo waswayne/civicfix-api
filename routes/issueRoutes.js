@@ -1,5 +1,5 @@
 import express from "express";
-import { createIssue, deleteIssue, getAllIssues, getIssueById, updateIssue, } from "../controllers/issueController.js";
+import { createIssue, deleteIssue, getAllIssues, getIssueById, updateIssue, updateIssueFields, } from "../controllers/issueController.js";
 import { requireAuth } from "../middleware/authMiddleware.js";
 
 const router = express.Router();
@@ -9,5 +9,8 @@ router.get("/issues", requireAuth, getAllIssues);
 router.get("/issues/:id", requireAuth, getIssueById);
 router.put('/issues/:id', updateIssue)
 router.delete('/issues/:id', deleteIssue)
+router.patch('/issues/:id', updateIssueFields)
+
+
 
 export default router;

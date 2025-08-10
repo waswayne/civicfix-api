@@ -1,4 +1,6 @@
 import Issue from "../models/Issue.js";
+import Comment from "../models/Comment.js";
+import moment from "moment";
 
 export const createIssue = async (req, res) => {
   const { title, description, location, image } = req.body;
@@ -67,39 +69,119 @@ export const getIssueById = async (req, res) => {
 };
 
 //update issue by id
-export const updateIssue = async (req,res) => {
-    try {
-       const updateIssue = await Issue.findByIdAndUpdate(
-        req.params.id.trim(), req.body, { new: true, runValidators: true }
-    ).populate('reportedBy', 'name email');
+export const updateIssue = async (req, res) => {
+  try {
+    const updateIssue = await Issue.findByIdAndUpdate(
+      req.params.id.trim(),
+      req.body,
+      { new: true, runValidators: true }
+    ).populate("reportedBy", "name email");
 
     if (!updateIssue) {
-        return res.status(404).json({message: 'Issue not found'})
+      return res.status(404).json({ message: "Issue not found" });
     }
 
-    res.status(200).json({ issue: updateIssue })
-    } catch (error) {
-        res.status(500).json({
-            message: "Error updating issue",
-            error: error.message
-        })
-    }
-}
+    res.status(200).json({ issue: updateIssue });
+  } catch (error) {
+    res.status(500).json({
+      message: "Error updating issue",
+      error: error.message,
+    });
+  }
+};
 
 //delete issue by Id
-export const deleteIssue = async (req,res) => {
-    try {
-        const deleteIssue = await Issue.findByIdAndDelete(req.params.id.trim())
+export const deleteIssue = async (req, res) => {
+  try {
+    const deleteIssue = await Issue.findByIdAndDelete(req.params.id.trim());
 
-        if (!deleteIssue) {
-            return res.status(404).json({message: 'Issue noy found'})
-        }
-
-        res.status(200).json({ message: 'Issue deleted succeesfully'})
-    } catch (error) {
-        res.status(500).json({
-            message: 'Error deleting issue',
-            error: error.message
-        })
+    if (!deleteIssue) {
+      return res.status(404).json({ message: "Issue noy found" });
     }
-}
+
+    res.status(200).json({ message: "Issue deleted succeesfully" });
+  } catch (error) {
+    res.status(500).json({
+      message: "Error deleting issue",
+      error: error.message,
+    });
+  }
+};
+
+//partial issue update
+export const updateIssueFields = async (req, res) => {
+  try {
+    const updatedIssue = await Issue.findByIdAndUpdate(
+      req.params.id,
+      { $set: req.body },
+      { new: true }
+    );
+
+    if (!updatedIssue) {
+      return res.status(404).json({ message: "Issue not found" });
+    }
+
+    res.status(200).json({ issue: updatedIssue });
+  } catch (error) {
+    res.status(500).json({ message: "Update failed", error: error.message });
+  }
+};
+
+//user comment on a issue
+export const addComment = async (req, res) => {
+  try {
+    const { id: issueId } = req.params;
+    const { userId, text } = req.body;
+
+    // Check if issue exists
+    const issue = await Issue.findById(issueId);
+    if (!issue) {
+      return res.status(404).json({ message: "Issue not found" });
+    }
+
+    //new comment
+    const newComment = new Comment({
+      issue: issueId,
+      user: userId,
+      text,
+    });
+    await newComment.save()
+
+    let formattedComments;
+
+    try {
+      // Try fetching all comments for this issue
+      const allComments = await Comment.find({ issue: issueId })
+        .populate("user", "name email")
+        .sort({ createdAt: -1 })
+        .select("_id issue user text createdAt updatedAt");
+
+      formattedComments = allComments.map((comment) => ({
+        ...comment.toObject(),
+        createdAt: moment(comment.createdAt).fromNow(),
+        updatedAt: moment(comment.updatedAt).fromNow(),
+      }))
+
+    } catch (fetchError) {
+      // If fetching fails, still return the new comment only
+      formattedComments = [
+        {
+          ...newComment.toObject(),
+          createdAt: moment(newComment.createdAt).fromNow(),
+          updatedAt: moment(newComment.updatedAt).fromNow(),
+        },
+      ];
+    }
+
+    res.status(201).json({
+      message: "Comment added",
+      comments: formattedComments,
+    })
+
+  } catch (error) {
+    res.status(500).json({
+      message: "Error adding comment",
+      error: error.message,
+    })
+  }
+};

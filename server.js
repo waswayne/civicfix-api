@@ -6,6 +6,8 @@ import cors from 'cors'
 import authRoutes from './routes/authRoutes.js'
 import { MONGO_URI,PORT } from './config/env.js'
 import issueRoutes from './routes/issueRoutes.js'
+import commentRoutes from './routes/commentRoutes.js'
+
 
 const app = express()
 
@@ -35,6 +37,7 @@ mongoose
 
 app.use('/api', authRoutes)
 app.use('/api', issueRoutes)
+app.use('/api', commentRoutes)
 
 app.get('/', (req, res) => {
   res.send('CivicFix is running')
